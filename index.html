@@ -20,6 +20,7 @@
   /* 背景画布：爱心粒子 */
   #bg{
     position:fixed; inset:0; display:block; width:100%; height:100%;
+    pointer-events:none;
   }
   /* 氛围光晕 */
   .glow{
@@ -37,19 +38,27 @@
     transition: opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1);
   }
   .stage.hide{ opacity:0; transform:scale(.94); pointer-events:none; }
+  #stage1{ opacity:0; }
+  #stage1.ready{ opacity:1; }
+  #stage1.hide{ opacity:0; transform:scale(.94); pointer-events:none; }
 
   /* ===== 打字阶段 ===== */
   .typing{
-    max-width: 19em;
-    font-size: clamp(19px, 4.4vw, 32px);
-    line-height: 2;
-    letter-spacing: 2px;
+    width: 100%;
+    max-width: 23em;
+    height: 62vh;
+    font-size: clamp(15px, 3.4vw, 22px);
+    line-height: 2.1;
+    letter-spacing: 1.5px;
     white-space: pre-wrap;
-    text-shadow: 0 0 22px rgba(255,93,125,.6), 0 2px 14px rgba(0,0,0,.9);
-    min-height: 6em;
-    display:flex; flex-wrap:wrap;
-    justify-content:center; align-items:center;
+    text-shadow: 0 0 22px rgba(255,93,125,.55), 0 2px 14px rgba(0,0,0,.95);
+    overflow-y: auto;
+    scrollbar-width: none;
+    padding: 12px 0 10vh;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10%, #000 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 10%, #000 100%);
   }
+  .typing::-webkit-scrollbar{ display:none; }
   .caret{
     display:inline-block; width:2px; height:1em;
     background: var(--pink); vertical-align:-2px;
@@ -62,7 +71,8 @@
     font-size: clamp(15px, 3.6vw, 20px);
     letter-spacing: 6px;
     color: var(--pink-soft);
-    opacity:.85;
+    opacity:.92;
+    text-shadow: 0 1px 10px rgba(0,0,0,.95), 0 0 26px rgba(0,0,0,.9), 0 0 18px rgba(255,93,125,.6);
   }
   #stage2 .ask{
     font-size: clamp(26px, 7.6vw, 54px);
@@ -141,27 +151,68 @@
     letter-spacing: 3px;
     opacity:0; animation: rise .8s ease forwards;
   }
+
+  /* ===== 开场页：轻触开始 ===== */
+  #splash{
+    position:fixed; inset:0; z-index:20;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:16px;
+    background: radial-gradient(60% 50% at 50% 45%, rgba(255,93,125,.16), transparent 70%);
+    cursor:pointer;
+    transition: opacity 1s ease;
+  }
+  #splash.hide{ opacity:0; pointer-events:none; }
+  .tap{
+    font-size: clamp(16px, 4vw, 24px);
+    letter-spacing: 8px;
+    color: rgba(255,255,255,.9);
+    text-shadow: 0 0 26px rgba(255,93,125,.75), 0 2px 14px rgba(0,0,0,.9);
+    animation: breathe 3.2s ease-in-out infinite;
+  }
+  .hint{
+    font-size: clamp(11px, 2.8vw, 13px);
+    letter-spacing: 2px;
+    color: rgba(255,255,255,.45);
+  }
+
+  /* ===== 第四幕：不愿意 ===== */
+  #stage4 .bye{
+    font-size: clamp(18px, 4.6vw, 30px);
+    letter-spacing: 3px;
+    line-height: 2.1;
+    color: rgba(255,255,255,.9);
+    text-shadow: 0 0 24px rgba(255,93,125,.35), 0 2px 16px rgba(0,0,0,.95);
+    opacity:0;
+    transform: translateY(8px);
+    transition: opacity 1.6s ease, transform 1.6s ease;
+  }
+  #stage4 .bye.on{ opacity:1; transform:none; }
 </style>
 </head>
 <body>
   <canvas id="bg"></canvas>
   <div class="glow"></div>
 
+  <!-- 开场页：轻触开始（同时解锁音频） -->
+  <div id="splash">
+    <div class="tap">轻 触 屏 幕</div>
+    <div class="hint">🔊 有背景音乐，建议戴上耳机</div>
+  </div>
+
   <!-- 第一幕：打字机 -->
   <div class="stage" id="stage1">
-    <div class="typing"><span id="typed"></span><span class="caret"></span></div>
+    <div class="typing" id="typeBox"><span id="typed"></span><span class="caret"></span></div>
   </div>
 
   <!-- 第二幕：提问 -->
   <div class="stage hide" id="stage2">
     <div class="to" id="herName">致 那个让心跳不听话的人</div>
-    <div class="ask">做我女朋友，好吗？</div>
-    <div class="sub">这句话，我在心里排练了很多遍</div>
+    <div class="ask">做我的女朋友，好吗？</div>
+    <div class="sub">给我一次机会</div>
     <div class="btns">
       <button class="btn btn-yes" id="yesBtn">愿 意</button>
-      <button class="btn btn-no" id="noBtn">再想想</button>
+      <button class="btn btn-no" id="noBtn">不愿意</button>
     </div>
-    <div id="tipline"></div>
   </div>
 
   <!-- 第三幕：答应之后 -->
@@ -175,6 +226,11 @@
     <div class="sign" style="animation-delay:2.4s">—— 一个终于鼓起勇气的人</div>
   </div>
 
+  <!-- 第四幕：选择不愿意 -->
+  <div class="stage hide" id="stage4">
+    <div class="bye" id="byeText">尊重你的选择，<br>愿你以后生活愉快</div>
+  </div>
+
 <script>
 /* =========================================================
    想改的东西，基本都在下面这几行
@@ -182,13 +238,30 @@
 const CONFIG = {
   // 打字内容，一行一句；改这里就是改开场白
   script: [
-    "有人说，喜欢一个人是藏不住的。",
-    "我练了很久，想把这句话藏好。",
-    "可每次见到你，眼睛就先替我回答了。",
-    "所以今天，我不藏了。"
+    "嗯……不知不觉，已经认识挺长时间了。",
+    "我渐渐习惯了有你在的生活，",
+    "习惯了晚上和你道晚安，",
+    "也习惯了和你分享我的情绪。",
+    "渐渐地，你在我心里占据了很大一部分。",
+    "生活中能帮到你是我的荣幸。",
+    "或许我今天的决定，对你来说很突然，",
+    "但，这真的是我深思熟虑后的决定。",
+    "我不太会表达，也没有真正谈过恋爱，",
+    "不知道该怎么表达我对你的喜欢。",
+    "你或许知道我其实是比较内向的，",
+    "但生活必须使我慢慢强大起来，使我独当一面。",
+    "十八岁，我成年了，我的十八岁寄予了我莫大的勇气。",
+    "可岁月匆匆，我感觉到我的十八岁也快走到尽头。",
+    "我怕过了这个时间，就再也不敢说出口，",
+    "怕成为我最大的遗憾。",
+    "可我也怕失败之后，从此形同陌路。",
+    "可是时间，不会再给我慢慢思考的机会了。",
+    "今天就算失败，我也迈出了这一步，",
+    "或许以后就不会有那么大的遗憾。",
+    "最后，我想说……"
   ],
   // 她的名字或称呼，会显示在提问上方
-  herName: "致 那个让心跳不听话的人",
+  herName: "致 敏",
   // 点“再想想”时的提示语，会依次出现
   tips: [
     "别这样，手抖了。",
@@ -207,7 +280,6 @@ const stage3 = document.getElementById('stage3');
 const typedEl = document.getElementById('typed');
 const yesBtn = document.getElementById('yesBtn');
 const noBtn = document.getElementById('noBtn');
-const tipline = document.getElementById('tipline');
 
 document.getElementById('herName').textContent = CONFIG.herName;
 
@@ -366,12 +438,17 @@ function loop(now){
   // 粒子
   ctx.globalCompositeOperation = 'lighter';
   for (const p of particles){
-    if (mode === 'burst'){
+    if (mode === 'burst' || mode === 'drift'){
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vx *= 0.985;
-      p.vy *= 0.985;
-      p.a *= 0.988;
+      if (mode === 'burst'){
+        p.vx *= 0.985;
+        p.vy *= 0.985;
+        p.a *= 0.988;
+      } else {
+        // 缓缓散开：速度几乎不变，亮度慢慢褪去
+        p.a *= 0.9865;
+      }
       if (p.a < 0.02) continue;
     } else {
       const stiff = mode === 'calm' ? 0.012 : 0.05;
@@ -411,60 +488,51 @@ function loop(now){
 }
 
 /* ---------- 打字机 ---------- */
+const typeBox = document.getElementById('typeBox');
+
 async function typeAll(){
-  await sleep(700);
+  await sleep(600);
   for (let i = 0; i < CONFIG.script.length; i++){
     const line = CONFIG.script[i];
     if (i > 0){ typedEl.textContent += '\n'; }
     for (const ch of line){
       typedEl.textContent += ch;
-      await sleep(ch === '，' || ch === '。' ? 420 : rand(70, 145));
+      typeBox.scrollTop = typeBox.scrollHeight;
+      await sleep(ch === '，' || ch === '。' ? 260 : rand(26, 52));
     }
-    await sleep(600);
+    await sleep(420);
   }
-  await sleep(1200);
+  await sleep(1400);
   stage1.classList.add('hide');
   await sleep(700);
   stage2.classList.remove('hide');
 }
 
-/* ---------- “再想想”按钮逃跑 ---------- */
-const NO_MAX = 4;          // 点几次之后彻底让路
-let noCount = 0;
-let moveSeed = 0;
-let lastMove = 0;
+/* ---------- 点“不愿意”：爱心缓缓散开 ---------- */
+const stage4 = document.getElementById('stage4');
+const byeText = document.getElementById('byeText');
 
-// 让按钮跳开（鼠标悬停就会触发，但不会消耗“容忍次数”）
-function jumpAway(){
-  const now = Date.now();
-  if (now - lastMove < 600) return;
-  lastMove = now;
-  moveSeed++;
-  const shrink = Math.max(0.45, 1 - moveSeed * 0.09);
-  const dx = (Math.random() < 0.5 ? -1 : 1) * rand(80, Math.min(250, W * 0.26));
-  const dy = rand(-80, 80);
-  noBtn.style.transform = `translate(${dx}px, ${dy}px) scale(${shrink})`;
-}
+noBtn.addEventListener('click', async () => {
+  if (mode === 'drift') return;
+  yesBtn.disabled = true;
+  noBtn.disabled = true;
 
-// 真的点下去，才算“再想想”的次数
-function refuseOnClick(){
-  if (noCount >= NO_MAX) return;
-  noCount++;
-  noBtn.style.opacity = String(Math.max(0, 0.9 - noCount * 0.15));
-  yesBtn.style.transform = `scale(${1 + noCount * 0.08})`;
-  tipline.textContent = CONFIG.tips[Math.min(noCount - 1, CONFIG.tips.length - 1)];
-  jumpAway();
-
-  if (noCount >= NO_MAX){
-    setTimeout(() => {
-      noBtn.style.opacity = '0';
-      noBtn.style.pointerEvents = 'none';
-      tipline.textContent = '答案只有一个，别为难它了 😊';
-    }, 350);
+  // 每颗粒子沿自己的方向缓慢飘走，同时慢慢变淡
+  mode = 'drift';
+  for (const p of particles){
+    const ang = Math.atan2(p.y - CY, p.x - W / 2) + rand(-0.5, 0.5);
+    const speed = rand(0.15, 0.55);
+    p.vx = Math.cos(ang) * speed;
+    p.vy = Math.sin(ang) * speed - rand(0.05, 0.25);  // 略微上飘
   }
-}
-noBtn.addEventListener('click', e => { e.preventDefault(); refuseOnClick(); });
-noBtn.addEventListener('mouseenter', jumpAway);
+
+  stage2.classList.add('hide');
+  fadeMusicOut(6);
+  await sleep(4600);
+  stage4.classList.remove('hide');
+  await sleep(120);
+  byeText.classList.add('on');
+});
 
 /* ---------- 点“愿意” ---------- */
 yesBtn.addEventListener('click', async () => {
@@ -477,6 +545,7 @@ yesBtn.addEventListener('click', async () => {
     p.vy = Math.sin(ang) * speed * rand(0.4, 1.2);
   }
   spawnRain(70);
+  sparkle();
   stage2.classList.add('hide');
   await sleep(800);
   stage3.classList.remove('hide');
@@ -492,10 +561,166 @@ yesBtn.addEventListener('click', async () => {
   }, 2200);
 });
 
+/* ---------- 背景音乐（Web Audio 实时合成：钢琴旋律 + 和弦垫 + 混响） ---------- */
+let audioCtx = null, master = null, dryBus = null, wetBus = null;
+let mOn = false, cycleTimer = null, nextCycle = 0;
+
+const LOOP_LEN = 24;      // 一轮 24 秒，4 个和弦各 6 秒
+const CHORDS = [
+  [174.61, 220.00, 261.63, 329.63], // Fmaj7  F A C E
+  [130.81, 164.81, 196.00, 246.94], // C      C E G B
+  [146.83, 174.61, 220.00, 261.63], // Dm7    D F A C
+  [116.54, 146.83, 174.61, 220.00]  // Bb     Bb D F A
+];
+// 旋律线（时间秒 → 音高），固定的乐句，不是随机音
+const MELODY = [
+  [0.9, 659.25], [2.4, 523.25], [3.8, 440.00],
+  [6.9, 783.99], [8.4, 659.25], [9.8, 587.33],
+  [12.9, 440.00], [14.4, 523.25], [15.8, 587.33],
+  [18.9, 659.25], [20.4, 587.33], [21.8, 523.25], [23.0, 440.00]
+];
+
+// 混响：用一段噪声衰减当作脉冲响应
+function makeReverb(ctx){
+  const len = Math.floor(ctx.sampleRate * 1.5);
+  const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++){
+    const t = i / len;
+    d[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.8);
+  }
+  const conv = ctx.createConvolver();
+  conv.buffer = buf;
+  return conv;
+}
+
+// 一个音：基频 + 二三次谐波，快起音、慢衰减，接近钢琴
+function piano(when, freq, dur, amp){
+  [[1, 1], [2, 0.32], [3, 0.14]].forEach(function(pair){
+    const mult = pair[0], w = pair[1];
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq * mult;
+    const peak = amp * w;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(peak, when + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+    osc.connect(g);
+    g.connect(dryBus);
+    g.connect(wetBus);
+    osc.start(when);
+    osc.stop(when + dur + 0.05);
+  });
+}
+
+// 和弦垫：两个微失谐的三角波，慢慢起、慢慢收
+function pad(when, freq, dur){
+  [-7, 7].forEach(function(det){
+    const osc = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
+    osc.detune.value = det;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(0.010, when + 1.5);
+    g.gain.linearRampToValueAtTime(0.0001, when + dur + 0.7);
+    osc.connect(g);
+    g.connect(dryBus);
+    g.connect(wetBus);
+    osc.start(when);
+    osc.stop(when + dur + 0.9);
+  });
+}
+
+function scheduleCycle(t0){
+  CHORDS.forEach(function(ch, ci){
+    const start = t0 + ci * 6;
+    ch.forEach(function(f){ pad(start, f, 5.4); });
+  });
+
+  MELODY.forEach(function(note){ piano(t0 + note[0], note[1], 2.2, 0.05); });
+
+  // 分解和弦伴奏：每 0.75 秒一个高八度音，很轻，只托一层
+  const order = [1, 2, 0, 3];
+  for (let i = 0; i < 32; i++){
+    const off = i * 0.75 + 0.3;
+    const ci = Math.floor(off / 6) % 4;
+    const tone = CHORDS[ci][order[i % 4]];
+    piano(t0 + off, tone * 2, 1.2, 0.014);
+  }
+}
+
+function musicTick(){
+  if (!mOn) return;
+  const now = audioCtx.currentTime;
+  while (nextCycle < now + 2){
+    scheduleCycle(nextCycle);
+    nextCycle += LOOP_LEN;
+  }
+  cycleTimer = setTimeout(musicTick, 500);
+}
+
+function startMusic(){
+  if (audioCtx) return;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return;
+  audioCtx = new AC();
+
+  master = audioCtx.createGain();
+  master.gain.setValueAtTime(0, audioCtx.currentTime);
+  master.gain.linearRampToValueAtTime(0.55, audioCtx.currentTime + 4);
+  master.connect(audioCtx.destination);
+
+  dryBus = audioCtx.createGain();
+  dryBus.gain.value = 1.0;
+  dryBus.connect(master);
+
+  wetBus = audioCtx.createGain();
+  wetBus.gain.value = 0.4;
+  wetBus.connect(makeReverb(audioCtx));
+  wetBus.connect(master);
+
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  mOn = true;
+  nextCycle = audioCtx.currentTime + 0.2;
+  musicTick();
+}
+
+// 答应时一小段上行音阶
+function sparkle(){
+  if (!audioCtx) return;
+  [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50].forEach(function(f, i){
+    piano(audioCtx.currentTime + i * 0.17, f, 1.2, 0.05);
+  });
+}
+
+// 拒绝时让音乐慢慢淡出
+function fadeMusicOut(sec){
+  mOn = false;
+  clearTimeout(cycleTimer);
+  if (!audioCtx || !master) return;
+  const t = audioCtx.currentTime;
+  master.gain.cancelScheduledValues(t);
+  master.gain.setValueAtTime(master.gain.value, t);
+  master.gain.linearRampToValueAtTime(0, t + sec);
+}
+/* ---------- 开场页：轻触开始 ---------- */
+const splash = document.getElementById('splash');
+splash.addEventListener('click', async () => {
+  splash.classList.add('hide');
+  startMusic();
+  stage1.classList.add('ready');
+  await sleep(900);
+  typeAll();
+}, { once: true });
+
 /* ---------- 启动 ---------- */
 resize();
 requestAnimationFrame(loop);
-typeAll();
 </script>
 </body>
 </html>
+
+
+
